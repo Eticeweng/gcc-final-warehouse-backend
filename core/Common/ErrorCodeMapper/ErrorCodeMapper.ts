@@ -1,8 +1,10 @@
 import FS from "./mapper/FS";
+import Loader from "./mapper/Loader";
 
 export class ErrorCodeMapper{
     private static MAPPER_MAP = {
-        "FS": FS
+        "FS": FS,
+        "LOADER": Loader
     }
 
     public static getCode(complexType: string, errorCode: string): number {
