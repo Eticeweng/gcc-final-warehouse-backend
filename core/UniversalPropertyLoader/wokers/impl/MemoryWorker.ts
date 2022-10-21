@@ -1,4 +1,4 @@
-import {IWorker} from "./IWorker";
+import {IWorker} from "../IWorker";
 
 export class MemoryWorker implements IWorker{
     readonly PHYSICAL_LOCATION: string;
@@ -17,6 +17,10 @@ export class MemoryWorker implements IWorker{
     set(propertyKey: string, property: any): boolean {
         this.instance[propertyKey] = property;
         return true;
+    }
+
+    operate<T, R>(operator: (instance: T | any) => any): R {
+        return operator(this.instance) as R;
     }
 
     flush(): boolean {

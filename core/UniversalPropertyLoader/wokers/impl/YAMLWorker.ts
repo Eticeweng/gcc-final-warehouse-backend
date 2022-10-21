@@ -1,8 +1,7 @@
 import yaml from "js-yaml";
-import {IWorker} from "./IWorker";
+import {IWorker} from "../IWorker";
 import fs from "fs";
-import {Loader} from "./Loader";
-import {Source} from "./Source";
+import {Loader} from "../../Loader";
 
 export class YAMLWorker implements IWorker{
     instance: {};
@@ -43,6 +42,10 @@ export class YAMLWorker implements IWorker{
             target = target[path[i]];
         }
         return false;
+    }
+
+    operate<T, R>(operator: (instance: T | any) => any): R {
+        return operator(this.instance) as R;
     }
 
     flush(): boolean {

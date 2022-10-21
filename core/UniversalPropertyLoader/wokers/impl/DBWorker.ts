@@ -1,6 +1,6 @@
-import {IWorker} from "./IWorker";
-import Database from "better-sqlite3";
-import {Loader} from "./Loader";
+import {IWorker} from "../IWorker";
+import Database, {prototype} from "better-sqlite3";
+import {Loader} from "../../Loader";
 
 // import Database from "better-sqlite3";
 
@@ -28,12 +28,12 @@ export class DBWorker implements IWorker{
 
     // put a sql query here
     get<T = any>(propertyKey: string): T; // only return value of pointed key
-    get<T = any>(propertyKey: Function): T; // execute the function bound to this db instance
-    get<T = any>(propertyKey: string | Function): T {
+    get<T = any>(propertyKey: ((instance: Database.Database) => T)): T; // execute the function bound to this db instance
+    get<T = any>(propertyKey: string | ((instance: Database.Database) => T)): T {
         if (typeof propertyKey === "function") {
             let result = null;
             try {
-                result = propertyKey.call(this.instance);
+                result = propertyKey(this.instance);
             } catch (e) {
                 throw e;
             }
@@ -53,7 +53,7 @@ export class DBWorker implements IWorker{
                 "select @_propertyName from @_tableName where propertyID = @_propertyID"
                     .replace("@_tableName", params._tableName)
                     .replace("@_propertyName", params._propertyName)
-            ).raw().get(params)[0] as T;
+            ).pluck().get(params) as T;
         }
         throw TypeError("failed to match key type(Function or String)");
     }
@@ -86,6 +86,12 @@ export class DBWorker implements IWorker{
                 .replace("@_propertyName", params._propertyName)
         ).run(params).changes != 0;
     }
+
+    operate<T, R>(operator: (instance: T | any) => any): R {
+        return operator(this.instance) as R;
+    }
+
+
 
     flush(): boolean {
         return true;

@@ -1,4 +1,4 @@
-import {Complex} from "./Complex";
+import {Complex} from "../Complex";
 
 export class ErrorComplex extends Complex<any> {
 
