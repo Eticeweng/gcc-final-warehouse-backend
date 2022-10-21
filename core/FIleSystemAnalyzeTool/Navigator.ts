@@ -1,8 +1,9 @@
 import fs, {Stats} from "fs";
 import {Location} from "./object/Location";
 import {Complex} from "../Common/Complex/Complex";
-import {ErrorComplex} from "../Common/Complex/ErrorComplex";
-import {ResultComplex} from "../Common/Complex/ResultComplex";
+import {ErrorComplex} from "../Common/Complex/impl/ErrorComplex";
+import {ResultComplex} from "../Common/Complex/impl/ResultComplex";
+import {Loader} from "../UniversalPropertyLoader/Loader";
 
 export class Navigator {
     private readonly COMPLEX_TYPE = "FS";
@@ -16,7 +17,7 @@ export class Navigator {
         return new ErrorComplex(this.COMPLEX_TYPE, "NAVINVOID", "navigator is in void, please init first.");
     }
 
-    public forward(where: string): Complex<[string, string][]> {
+    public forward(where: string): Complex<[string, any[]][]> {
         if (this._inVoid) {
             return this.inVoid();
         }
@@ -26,14 +27,10 @@ export class Navigator {
             return new ErrorComplex(this.COMPLEX_TYPE, e.code, e.message);
         }
         this.path.push(where);
-        let files: [string, string][] = [];
-        for (let file of this.current.files) {
-            files.push([file.name, file.isDirectory() ? "D" : "F"]);
-        }
-        return new ResultComplex<[string, string][]>(this.COMPLEX_TYPE, files);
+        return this.list();
     }
 
-    public backward(): Complex<[string, string][]> {
+    public backward(): Complex<[string, any[]][]> {
         if (this._inVoid) {
             return this.inVoid();
         }
@@ -44,14 +41,10 @@ export class Navigator {
             return new ErrorComplex(this.COMPLEX_TYPE, e.code, e.message);
         }
         this.path = path;
-        let files: [string, string][] = [];
-        for (let file of this.current.files) {
-            files.push([file.name, file.isDirectory() ? "D" : "F"]);
-        }
-        return new ResultComplex<[string, string][]>(this.COMPLEX_TYPE, files);
+        return this.list();
     }
 
-    public locate(path: string): Complex<[string, string][]> {
+    public locate(path: string): Complex<[string, any[]][]> {
         try {
             this.current.locate(path);
         } catch (e) {
@@ -59,15 +52,27 @@ export class Navigator {
         }
         this.path = path.split("\\");
         this._inVoid = false;
-        let files: [string, string][] = [];
-        for (let file of this.current.files) {
-            files.push([file.name, file.isDirectory() ? "D" : "F"]);
-        }
-        return new ResultComplex<[string, string][]>(this.COMPLEX_TYPE, files);
+        return this.list();
     }
 
-    public list(): fs.Dirent[] {
-        return this.current.files;
+    public list(): Complex<[string, any[]][]> {
+        let list: [string, any[]][] = [];
+        let attributeFileds = Loader.get<string[]>("ExposedAttribute", "static", "fsnav").data;
+        this.current.files.forEach(dirent => {
+            try {
+                let stat = fs.statSync(`${this.path.join("\\")}\\${dirent.name}`);
+                let type = parseInt([+stat.isDirectory(), +stat.isFile(), +stat.isFIFO(), +stat.isSocket(),
+                    +stat.isBlockDevice(), +stat.isCharacterDevice(), +stat.isSymbolicLink()].join(""), 2);
+                let attributes = [];
+                attributeFileds.forEach(attribute => {
+                    attributes.push(stat[attribute]);
+                });
+                list.push([dirent.name, [type, ...attributes]]);
+            } catch (e) {
+                return new ErrorComplex("FS", e.code, e.message);
+            }
+        });
+        return new ResultComplex<[string, any[]][]>("FS", list);
     }
 
     public getCurrentDirStat() {
@@ -84,5 +89,9 @@ export class Navigator {
 
     public getCurrentPathArray(): string[] {
         return this.path;
+    }
+
+    public currentPath(): Complex<string> {
+        return new ResultComplex<string>("FS", this.path.join("\\"));
     }
 }
