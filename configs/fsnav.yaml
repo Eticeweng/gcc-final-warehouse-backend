@@ -1,0 +1,4 @@
+ExposedAttribute:
+  - "size"
+  - "ctime"
+  - "birthtime"

@@ -1,5 +1,5 @@
-import FS from "./mapper/FS";
-import Loader from "./mapper/Loader";
+import FS from "./mappers/FS";
+import Loader from "./mappers/Loader";
 
 export class ErrorCodeMapper{
     private static MAPPER_MAP = {

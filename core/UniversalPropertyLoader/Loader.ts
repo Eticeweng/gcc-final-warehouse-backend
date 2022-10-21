@@ -1,12 +1,12 @@
 import yaml from "js-yaml";
 import path from "path";
-import {YAMLWorker} from "./YAMLWorker";
-import {IWorker} from "./IWorker";
+import {YAMLWorker} from "./wokers/impl/YAMLWorker";
+import {IWorker} from "./wokers/IWorker";
 import {Complex} from "../Common/Complex/Complex";
-import {ErrorComplex} from "../Common/Complex/ErrorComplex";
-import {ResultComplex} from "../Common/Complex/ResultComplex";
-import {MemoryWorker} from "./MemoryWorker";
-import {DBWorker} from "./DBWorker";
+import {ErrorComplex} from "../Common/Complex/impl/ErrorComplex";
+import {ResultComplex} from "../Common/Complex/impl/ResultComplex";
+import {MemoryWorker} from "./wokers/impl/MemoryWorker";
+import {DBWorker} from "./wokers/impl/DBWorker";
 
 export class Loader {
     // static
@@ -67,14 +67,18 @@ export class Loader {
         return new ResultComplex("LOADER", this.workerStacks.delete(key));
     }
 
-    public static get<T>(propertyKey: string | Function, partition: string): Complex<T>;
-    public static get<T>(propertyKey: string | Function, type: string, endPoint: string): Complex<T>;
-    public static get<T>(propertyKey: string | Function, ...args): Complex<T> {
+    public static get<T>(propertyKey: string, partition: string): Complex<T>;
+    public static get<T>(propertyKey: string, type: string, endPoint: string): Complex<T>;
+    public static get<T>(propertyKey: string, ...args): Complex<T> {
         let worker = this.workerStacks.get(this.buildKey(args));
         if (worker == null) {
             return new ErrorComplex("LOADER", "WRKKEYNEXS", `requested worker ${args} not exists`);
         }
-        return new ResultComplex<T>("LOADER", worker.get<T>(propertyKey));
+        try {
+            return new ResultComplex<T>("LOADER", worker.get<T>(propertyKey));
+        } catch (e) {
+            return new ErrorComplex("LOADER", "WRKERROR", e.message);
+        }
     }
 
     public static set<T>(propertyKey: string, property: T, partition: string): Complex<boolean>;
@@ -88,6 +92,20 @@ export class Loader {
             return new ResultComplex<boolean>("LOADER", true);
         }
         return new ErrorComplex("LOADER", "PRTNOTSET", `property ${propertyKey} is not set`);
+    }
+
+    public static operate<T, R>(operator: ((instance: T) => any), partition: string): Complex<R>;
+    public static operate<T, R>(operator: ((instance: T) => any), type: string, endPoint: string): Complex<R>;
+    public static operate<T, R>(operator: ((instance: T) => any), ...args): Complex<R> {
+        let worker = this.workerStacks.get(this.buildKey(args));
+        if (worker == null) {
+            return new ErrorComplex("LOADER", "WRKKEYNEXS", `requested worker ${args} not exists`);
+        }
+        try {
+            return new ResultComplex("LOADER", worker.operate<T, R>(operator));
+        } catch (e) {
+            return new ErrorComplex("LOADER", e.code, e.message);
+        }
     }
 
     public static close(): boolean {
