@@ -1,3 +1,4 @@
+
 export class Complex<T> {
     protected readonly _isError: boolean;
     protected readonly _errorCode: string;
@@ -20,24 +21,23 @@ export class Complex<T> {
         }
     }
 
-
     get COMPLEX_TYPE(): string {
         return this._COMPLEX_TYPE;
     }
 
-    public get isError(): boolean {
+    get isError(): boolean {
         return this._isError;
     }
 
-    public get errorCode(): string {
+    get errorCode(): string {
         return this._errorCode;
     }
 
-    public get errorMessage(): string {
+    get errorMessage(): string {
         return this._errorMessage;
     }
 
-    public get data(): T {
+    get data(): T {
         return this._data;
     }
 

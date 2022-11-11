@@ -6,6 +6,7 @@ export class NetworkResult {
     public static send(complex: Complex<any>, res: Response<any, any>) {
         res.status(complex.isError ? ErrorCodeMapper.getCode(complex.COMPLEX_TYPE, complex.errorCode) : 200)
             .send({
+                code: complex.errorCode,
                 message: complex.errorMessage,
                 data: complex.data
             });
