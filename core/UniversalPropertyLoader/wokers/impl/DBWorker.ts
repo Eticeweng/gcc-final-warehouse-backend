@@ -1,6 +1,7 @@
 import {IWorker} from "../IWorker";
 import Database, {prototype} from "better-sqlite3";
 import {Loader} from "../../Loader";
+import {inflate} from "zlib";
 
 // import Database from "better-sqlite3";
 
@@ -10,90 +11,99 @@ export class DBWorker implements IWorker{
     private readonly TYPE = "DB";
     private readonly TABLE_NAME;
 
-    constructor(endPoint: string) { // <tableName>@<dbFileName> no .db
-        let complex = endPoint.split("@");
-        if (complex.length != 2) {
-            throw SyntaxError("missing arg(s), required 2");
-        }
-        let table = complex[0];
-        let location = Loader.DB_LOCATION + complex[1] + ".db";
+    constructor(endPoint: string, tableName: string) {
+        let location = Loader.DB_LOCATION + endPoint + ".db";
         try {
             this.instance = new Database(location);
+            this.instance.pragma("foreign_keys = ON");
         } catch (e) {
             throw e;
         }
         this.PHYSICAL_LOCATION = location;
-        this.TABLE_NAME = table;
+        this.TABLE_NAME = tableName;
     }
 
-    // put a sql query here
-    get<T = any>(propertyKey: string): T; // only return value of pointed key
-    get<T = any>(propertyKey: ((instance: Database.Database) => T)): T; // execute the function bound to this db instance
-    get<T = any>(propertyKey: string | ((instance: Database.Database) => T)): T {
-        if (typeof propertyKey === "function") {
-            let result = null;
-            try {
-                result = propertyKey(this.instance);
-            } catch (e) {
-                throw e;
-            }
-            return result as T;
-        } else if (typeof propertyKey === "string") {
-            let complex = propertyKey.split("@");
-            if (complex.length != 2) {
-                throw SyntaxError("missing arg(s), required 2");
-            }
-            let params = {
-                _propertyName: complex[0],
-                _tableName: this.TABLE_NAME,
-                _propertyID: complex[1]
-            };
-
-            return this.instance.prepare( // model: <propertyName>@<propertyID>
-                "select @_propertyName from @_tableName where propertyID = @_propertyID"
-                    .replace("@_tableName", params._tableName)
-                    .replace("@_propertyName", params._propertyName)
-            ).pluck().get(params) as T;
-        }
-        throw TypeError("failed to match key type(Function or String)");
-    }
-
-    set(propertyKey: string, property: any): boolean {
-        let complex = propertyKey.split("@");
-        if (complex.length != 2) {
-            throw SyntaxError("missing arg(s), required 2");
-        }
-        let params = { //
+    get<T extends any[]>(propertyKey: string[], propertyID: string): [...T] {
+        let params = {
+            _propertyName: propertyKey.join(","),
             _tableName: this.TABLE_NAME,
-            _propertyName: complex[0],
-            _property: property,
-            _propertyID: complex[1]
+            _propertyID: propertyID
         };
-        let exists = this.instance.prepare(
-            "select count(*) from @_tableName where propertyID = @_propertyID"
-                .replace("@_tableName", params._tableName)
-        ).raw().get(params) == 1;
-        if (exists) {
+        return this.instance.prepare(
+            `select ${params._propertyName} from ${this.TABLE_NAME} where propertyID = @_propertyID`
+        ).raw().get(params) as [...T];
+    }
+
+    set<T extends any[]>(propertyKeys: string[], properties: T, propertyID?: string): boolean {
+        let params = {
+            _tableName: this.TABLE_NAME,
+            _propertyName: `(${propertyKeys.join(",")})`,
+            _property: `(${properties.map(v => `'${v}'`).join(",")})`,
+            _propertyID: propertyID // better-sqlite3 replace and fill the " automatically
+        };
+        try {
             return this.instance.prepare(
-                "update @_tableName set @_propertyName = @_property where propertyID = @_propertyID"
-                    .replace("@_tableName", params._tableName)
-                    .replace("@_propertyName", params._propertyName)
+                `update ${this.TABLE_NAME} set ${params._propertyName} = ${params._property} where propertyID = @_propertyID`
             ).run(params).changes != 0;
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    put<T extends any[]>(propertyKeys: string[], properties: T, propertyID?: string): boolean {
+        let params = {
+            _tableName: this.TABLE_NAME,
+            _propertyName: `${propertyKeys.join(",")}`,
+            _property: `${properties.map(v => `'${v}'`).join(",")}`,
+            _propertyID: propertyID
+        };
+        try {
+            return this.instance.prepare(
+                `insert into ${this.TABLE_NAME} (propertyID, ${params._propertyName}) values (@_propertyID, ${params._property})`
+            ).run(params).changes != 0;
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    delete(propertyKey: string, propertyID?: string): boolean {
+        if (propertyKey === "*") {
+            return this.instance.prepare(
+                `delete from ${this.TABLE_NAME} where propertyID = @_propertyID`
+            ).run({
+                _propertyID: propertyID
+            }).changes == 1;
         }
         return this.instance.prepare(
-            "insert into @_tableName (propertyID, @_propertyName) values (@_propertyID, @_property)"
-                .replace("@_tableName", params._tableName)
-                .replace("@_propertyName", params._propertyName)
-        ).run(params).changes != 0;
+            `update ${this.TABLE_NAME} set ${propertyKey} = null where propertyID = @_propertyID`
+        ).run({
+            _propertyID: propertyID
+        }).changes == 1;
+    }
+
+    // why someone need to sniff a field is null or not??????
+    exists(propertyKey: string, propertyID?: string): boolean {
+        if (propertyKey === "*") {
+            return this.instance.prepare(
+                `select count(*) from ${this.TABLE_NAME} where propertyID = @_propertyID`
+                    .replace("@_tableName", this.TABLE_NAME)
+            ).raw().get({
+                _propertyID: propertyID
+            }) == 1;
+        }
+        return this.instance.prepare(
+            `select ${propertyKey} from ${this.TABLE_NAME} where propertyID = @_propertyID`
+        ).raw().get({
+            _propertyID: propertyID
+        }) != null;
     }
 
     operate<T, R>(operator: (instance: T | any) => any): R {
         return operator(this.instance) as R;
     }
 
-
-
     flush(): boolean {
+        this.instance.close();
         return true;
     }
 
