@@ -29,9 +29,11 @@ export class DBWorker implements IWorker{
             _tableName: this.TABLE_NAME,
             _propertyID: propertyID
         };
-        return this.instance.prepare(
+        let result = this.instance.prepare(
             `select ${params._propertyName} from ${this.TABLE_NAME} where propertyID = @_propertyID`
-        ).raw().get(params) as [...T];
+        ).raw().get(params);
+        // counter: better-sqlite3 return undefined instead of [undefined] if it gets 0 row from db
+        return result == null ? [result] as unknown as [...T] : result as [...T];
     }
 
     set<T extends any[]>(propertyKeys: string[], properties: T, propertyID?: string): boolean {

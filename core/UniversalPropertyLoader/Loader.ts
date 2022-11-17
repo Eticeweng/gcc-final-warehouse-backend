@@ -96,7 +96,7 @@ export class Loader {
 
         try {
             let worker = this.getWorker(this.buildKey(args));
-            return worker.get<T>(propertyKeys, propertyID);
+            return worker.get<T>(propertyKeys, propertyID) as [...T];
         } catch (e) {
             throw {
                 type: this.TYPE,
