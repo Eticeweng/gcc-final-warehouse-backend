@@ -85,11 +85,15 @@ export class Navigator {
                     +stat.isBlockDevice(), +stat.isCharacterDevice(), +stat.isSymbolicLink()].join(""), 2);
                 let attributes = [];
                 attributeFields.forEach(attribute => {
-                    attributes.push(stat[attribute]);
+                    let extracted = stat[attribute];
+                    if (extracted instanceof Date) {
+                        extracted = extracted.getTime();
+                    }
+                    attributes.push(extracted);
                 });
                 list.push([dirent.name, [type, ...attributes]]);
             } catch (e) {
-                return;
+                // return;
                 // return new ErrorComplex("FS", e.code, e.message);
             }
         });

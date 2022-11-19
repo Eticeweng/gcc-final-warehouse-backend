@@ -30,6 +30,10 @@ export class Navigation {
         return this.navigator.backward();
     }
 
+    locate(fullPath: string): [string, any[]][] {
+        return this.navigator.locate(fullPath);
+    }
+
     listDirectory(): [string, any[]][] {
         return this.navigator.list();
     }
