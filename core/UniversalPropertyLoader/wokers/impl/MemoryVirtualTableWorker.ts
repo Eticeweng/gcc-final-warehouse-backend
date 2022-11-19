@@ -15,7 +15,7 @@ export class MemoryVirtualTableWorker implements IWorker{
 
     get<T extends any[]>(propertyKey: string[], propertyID?: string): [...T] {
         if (!this.exists("", propertyID)) {
-            return undefined;
+            return [undefined] as unknown as [...T];
         }
         let result = [];
         if (propertyKey.length == 1 && propertyKey[0] === "") {
@@ -48,7 +48,7 @@ export class MemoryVirtualTableWorker implements IWorker{
     }
 
     delete(propertyKey: string, propertyID?: string): boolean {
-        if (propertyKey.length == 1 && propertyKey[0] === "") {
+        if (propertyKey === "") {
             return delete this.instance[propertyID];
         }
         try {
