@@ -14,6 +14,7 @@ const USER_NAME = "test";
 const SERVICE_NAME = "a service";
 
 let qrcodeURL = authenticator.keyuri(USER_NAME, SERVICE_NAME, SECRET);
+
 console.log(qrcodeURL);
 
 // qrcode.toDataURL(qrcodeURL, (error, url) => {

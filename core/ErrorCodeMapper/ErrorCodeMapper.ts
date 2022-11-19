@@ -3,6 +3,7 @@ import Loader from "../../stores/mappers/Loader.json";
 import FSNAV from "../../stores/mappers/FSNAV.json";
 import AS from "../../stores/mappers/AS.json";
 import AC from "../../stores/mappers/AC.json";
+import MISC from "../../stores/mappers/MISC.json";
 
 export class ErrorCodeMapper{
     private static MAPPER_MAP = {
@@ -10,7 +11,8 @@ export class ErrorCodeMapper{
         "LOADER": Loader,
         "FSNAV": FSNAV,
         "AS": AS,
-        "AC": AC
+        "AC": AC,
+        "MISC": MISC
     }
 
     public static getCode(complexType: string, errorCode: string): number {
