@@ -1,22 +1,19 @@
-import FS from "../../stores/mappers/FS.json";
-import Loader from "../../stores/mappers/Loader.json";
-import FSNAV from "../../stores/mappers/FSNAV.json";
-import AS from "../../stores/mappers/AS.json";
-import AC from "../../stores/mappers/AC.json";
-import MISC from "../../stores/mappers/MISC.json";
+import fs from "fs";
+import path from "path";
 
 export class ErrorCodeMapper{
-    private static MAPPER_MAP = {
-        "FS": FS,
-        "LOADER": Loader,
-        "FSNAV": FSNAV,
-        "AS": AS,
-        "AC": AC,
-        "MISC": MISC
-    }
+    private static MAPPER_MAP = {};
 
     public static getCode(complexType: string, errorCode: string): number {
         try {
+            if (!this.MAPPER_MAP[complexType]) {
+                this.MAPPER_MAP[complexType] = JSON.parse(
+                    fs.readFileSync(path.resolve(
+                        __dirname,
+                        `../../stores/mappers/${complexType}.json`),
+                        {encoding: "utf-8"})
+                )
+            }
             let code = this.MAPPER_MAP[complexType][errorCode];
             if (code == undefined) {
                 throw null;

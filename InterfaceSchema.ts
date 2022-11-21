@@ -5,6 +5,9 @@ export class InterfaceSchema {
         "/auth": {
             body: ["userBeacon", "userToken"]
         },
+        "/authMethod": {
+            query: ["userBeacon"]
+        },
         "/remove": {
             body: ["instance"]
         },

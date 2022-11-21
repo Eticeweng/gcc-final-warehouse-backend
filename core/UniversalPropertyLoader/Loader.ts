@@ -110,7 +110,6 @@ export class Loader {
     public static set<T extends any[]>(propertyKeys: string[], propertyID: string, properties: T, partition: string): Complex<boolean>;
     public static set<T extends any[]>(propertyKeys: string[], propertyID: string, properties: T, type: string, endPoint: string): Complex<boolean>;
     public static set<T extends any[]>(propertyKeys: string[], propertyID: string, properties: T, ...args): Complex<boolean> {
-
         if (properties.length != propertyKeys.length) {
             throw {
                 type: this.TYPE,
