@@ -43,27 +43,23 @@ export class AuthService {
 
     static getAuthMethod(userBeacon: string): Complex<string[]> {
         try {
-            // todo: one more field to indicate the auth method in the db
-            let x = Loader.get<[string]>(["_2fakey"], userBeacon, this.keys.UserDB);
-            console.log(x);
-            if (x.length > 0) {
-                return new ResultComplex(this.TYPE, ["_2fa"]);
+            if (AccessControl.checkUserBeaconExists(userBeacon)) {
+                // todo: one more field to indicate the auth method in the db
+                return new ResultComplex(this.TYPE,
+                    Loader.get<[string]>(["auth_method"], userBeacon, this.keys.UserDB)[0]
+                        .split(","));
             }
-            return new ResultComplex(this.TYPE, ["token"]);
+            return new ErrorComplex(this.TYPE, "USER_NEXST", "");
         } catch (e) {
-            throw {
-                type: this.TYPE,
-                code: e.code,
-                message: e.message
-            }
+            return new ErrorComplex(e.type, e.code, e.message);
         }
     }
 
-    static async createAuth(userBeacon: string, authToken: string, name: string, permission: number): Promise<Complex<[string, string]>> {
+    static async createAuth(userBeacon: string, authToken: string, name: string, permission: number, authMethod: string[]): Promise<Complex<[string, string]>> {
         try {
             let secret = authenticator.generateSecret();
-            Loader.put<[string, string, string, number]>(["token", "_2fakey", "name", "permission"],
-                userBeacon, [authToken, secret, name, permission], this.keys.UserDB);
+            Loader.put<[string, string, string, number, string]>(["token", "_2fakey", "name", "permission", "authMethod"],
+                userBeacon, [authToken, secret, name, permission, authMethod.join(",")], this.keys.UserDB);
             let _2faURL = authenticator.keyuri(userBeacon, "Project Warehouse", secret);
             let qrCodeURL = "";
             await qrcode.toDataURL(_2faURL).then(url => {
@@ -71,11 +67,7 @@ export class AuthService {
             });
             return new ResultComplex(this.TYPE, [secret, qrCodeURL]);
         } catch (e) {
-            throw {
-                type: this.TYPE,
-                code: e.code,
-                message: e.message
-            }
+            return new ErrorComplex(e.type, e.code, e.message);
         }
     }
 
@@ -93,11 +85,7 @@ export class AuthService {
             }
             return new ErrorComplex(this.TYPE, "AUTH_FAIL", "");
         } catch (e) {
-            throw {
-                type: this.TYPE,
-                code: e.code,
-                message: e.message
-            }
+            return new ErrorComplex(e.type, e.code, e.message);
         }
     }
 
@@ -117,11 +105,7 @@ export class AuthService {
             }
             return new ErrorComplex(this.TYPE, "NOT_OWN", "");
         } catch (e) {
-            throw {
-                type: this.TYPE,
-                code: e.code,
-                message: e.message
-            }
+            return new ErrorComplex(e.type, e.code, e.message);
         }
     }
 
@@ -141,10 +125,10 @@ export class AuthService {
         }
     }
 
-    static assignInstance(beacon: string): Complex<string> {
+    static assignInstance(userBeacon: string): Complex<string> {
         try {
-            let instance = new UserInstance(beacon);
-            Loader.get<[AuthedUser]>(["authedUser"], beacon, this.keys.UserAuthed)[0]
+            let instance = new UserInstance(userBeacon);
+            Loader.get<[AuthedUser]>(["authedUser"], userBeacon, this.keys.UserAuthed)[0]
                 .userInstances.add(instance.userInstanceID);
             Loader.put<[UserInstance]>(["instance"], instance.userInstanceID,
                 [instance], this.keys.UserInstanceTable);
@@ -154,7 +138,7 @@ export class AuthService {
         }
     }
 
-    static resignInstance(beacon: string, instanceID: string): Complex<boolean> {
+    static resignInstance(userBeacon: string, instanceID: string): Complex<boolean> {
         try {
             let instance = Loader.get<[UserInstance]>([""], instanceID, this.keys.UserInstanceTable)[0];
             // cleanup
@@ -168,7 +152,6 @@ export class AuthService {
                     Loader.delete("", instanceID, this.keys.UserInstanceTable)
                 ) :
                 new ErrorComplex(this.TYPE, "USER_INST_REMOVE_FAIL", `request user instance ${instanceID} not exists or fail to clean up`);
-
         } catch (e) {
             return new ErrorComplex(e.type, e.code, e.message);
         }
