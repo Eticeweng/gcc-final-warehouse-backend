@@ -28,7 +28,7 @@ export class Navigator {
     public forward(where: string): [string, any[]][] {
         this.inVoid();
         try {
-            this.current.locate(`${this.path.join("\\")}\\${where}`);
+            this.current.locate(`${this.path.join("/")}/${where}`);
         } catch (e) {
             throw {
                 type: this.TYPE,
@@ -45,7 +45,7 @@ export class Navigator {
         this.inVoid();
         let path = this.path.splice(0, this.path.length - 1);
         try {
-            this.current.locate(`${path.join("\\")}`);
+            this.current.locate(`${path.join("/")}`);
         } catch (e) {
             throw {
                 type: this.TYPE,
@@ -69,7 +69,7 @@ export class Navigator {
             }
             // return new ErrorComplex(this.COMPLEX_TYPE, e.code, e.message);
         }
-        this.path = path.split("\\");
+        this.path = path.split("/").filter(layer => layer != "" || layer.length != 0);
         this._inVoid = false;
         return this.list();
     }
@@ -80,7 +80,7 @@ export class Navigator {
         let attributeFields = Loader.get<[string[]]>(["ExposedAttribute"], null, "static", "fsnav")[0];
         this.current.files.forEach(dirent => {
             try {
-                let stat = fs.statSync(`${this.path.join("\\")}\\${dirent.name}`);
+                let stat = fs.statSync(`${this.path.join("/")}/${dirent.name}`);
                 let type = parseInt([+stat.isDirectory(), +stat.isFile(), +stat.isFIFO(), +stat.isSocket(),
                     +stat.isBlockDevice(), +stat.isCharacterDevice(), +stat.isSymbolicLink()].join(""), 2);
                 let attributes = [];
@@ -107,7 +107,7 @@ export class Navigator {
 
     public getStat(name): fs.Stats {
         try {
-            return fs.statSync(`${this.path.join("\\")}\\${name}`);
+            return fs.statSync(`${this.path.join("/")}/${name}`);
         } catch (e) {
             return e;
         }
