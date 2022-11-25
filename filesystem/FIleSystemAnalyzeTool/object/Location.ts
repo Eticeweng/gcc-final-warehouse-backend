@@ -13,8 +13,11 @@ export class Location {
         return this._currentStat;
     }
 
-    public locate(path) {
+    public locate(path: string) {
         try {
+            if (/^[a-zA-Z]:$/.test(path)) {
+                path += "/";
+            }
             this._files = fs.readdirSync(path, {withFileTypes: true});
             this._currentStat = fs.statSync(path);
         } catch (e) {
