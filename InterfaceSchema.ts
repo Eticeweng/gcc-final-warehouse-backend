@@ -1,28 +1,9 @@
 import {Request} from "express";
+import schemas from "./SchemaDict";
 
 export class InterfaceSchema {
-    static schemas = {
-        "/auth": {
-            body: ["userBeacon", "userToken"]
-        },
-        "/authMethod": {
-            query: ["userBeacon"]
-        },
-        "/remove": {
-            body: ["instance"]
-        },
-        "/go": {
-            body: ["instance", "where"]
-        },
-        "/back": {
-            body: ["instance"]
-        },
-        "/tp": {
-            body: ["instance", "fullPath"]
-        }
-    }
     static check(url: string, req: Request): string[] {
-        let schema = this.schemas[url];
+        let schema = schemas[url];
         if (!schema) {
             return [];
         }

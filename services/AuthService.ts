@@ -13,6 +13,7 @@ import qrcode from "qrcode";
 import jwt from "jsonwebtoken";
 
 import jwtsecret from "../stores/jwtsecret.json";
+import {AuthorizationVerify} from "../permission/Auth/AuthorizationVerify";
 
 export class AuthService {
     public static keys = {
@@ -44,22 +45,24 @@ export class AuthService {
     static getAuthMethod(userBeacon: string): Complex<string[]> {
         try {
             if (AccessControl.checkUserBeaconExists(userBeacon)) {
-                // todo: one more field to indicate the auth method in the db
                 return new ResultComplex(this.TYPE,
                     Loader.get<[string]>(["auth_method"], userBeacon, this.keys.UserDB)[0]
                         .split(","));
             }
-            return new ErrorComplex(this.TYPE, "USER_NEXST", "");
+            return new ErrorComplex(this.TYPE, "USER_NEXST", "no such a user");
         } catch (e) {
             return new ErrorComplex(e.type, e.code, e.message);
         }
     }
 
-    static async createAuth(userBeacon: string, authToken: string, name: string, permission: number, authMethod: string[]): Promise<Complex<[string, string]>> {
+    static async createAuth(userBeacon: string, authToken: string,
+                            name: string, baseDir: string,
+                            permission: number, authMethod: string[]): Promise<Complex<[string, string]>> {
         try {
             let secret = authenticator.generateSecret();
-            Loader.put<[string, string, string, number, string]>(["token", "_2fakey", "name", "permission", "authMethod"],
+            Loader.put<[string, string, string, number, string]>(["token", "_2fakey", "name", "permission", "auth_method"],
                 userBeacon, [authToken, secret, name, permission, authMethod.join(",")], this.keys.UserDB);
+            Loader.put<[string]>(["base_dir_path"], userBeacon, [baseDir], NavigationService.keys.UserFS);
             let _2faURL = authenticator.keyuri(userBeacon, "Project Warehouse", secret);
             let qrCodeURL = "";
             await qrcode.toDataURL(_2faURL).then(url => {
@@ -71,9 +74,17 @@ export class AuthService {
         }
     }
 
-    static auth(userBeacon: string, authToken: string): Complex<string> {
+    static auth(userBeacon: string, authInfo: {}): Complex<string> {
         try {
-            if (AccessControl.checkAccountAuthPrivilege(userBeacon, authToken)) {
+            let authResult = true;
+            for (let method of Loader.get<[string]>(["auth_method"], userBeacon,
+                this.keys.UserDB)[0].split(",")) {
+                if (!AuthorizationVerify.exported[method](userBeacon, authInfo[method])) {
+                    authResult = false;
+                    break;
+                }
+            }
+            if (authResult) {
                 if (!Loader.exists("", userBeacon, this.keys.UserAuthed)) {
                     Loader.put<[AuthedUser]>(["authedUser"], userBeacon,
                         [new AuthedUser()], this.keys.UserAuthed);

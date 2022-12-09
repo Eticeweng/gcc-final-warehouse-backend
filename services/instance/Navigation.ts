@@ -4,6 +4,7 @@ import {Complex} from "../../core/Complex/Complex";
 export class Navigation {
     private navigator: Navigator;
     private readonly BASE_DIR: string;
+    private _currentLevel: number;
     private __SLOT__: any;
 
     private _userInstanceID: string;
@@ -14,24 +15,37 @@ export class Navigation {
         this.navigator = new Navigator();
     }
 
+
+    get currentLevel(): number {
+        return this._currentLevel;
+    }
+
     get userInstanceID(): string {
         return this._userInstanceID;
     }
 
-    ready(): [string, any[]][] {
-        return this.navigator.locate(this.BASE_DIR);
+    ready(): [string, [string, any[]][]] {
+        let result = this.navigator.locate(this.BASE_DIR);
+        this._currentLevel = 0;
+        return result;
     }
 
-    forward(where: string): [string, any[]][] {
-        return this.navigator.forward(where);
+    forward(where: string): [string, [string, any[]][]] {
+        let result = this.navigator.forward(where);
+        this._currentLevel += 1;
+        return result;
     }
 
-    backward(): [string, any[]][] {
-        return this.navigator.backward();
+    backward(): [string, [string, any[]][]] {
+        let result = this.navigator.backward();
+        this._currentLevel -= 1;
+        return result;
     }
 
-    locate(fullPath: string): [string, any[]][] {
-        return this.navigator.locate(fullPath);
+    locate(fullPath: string): [string, [string, any[]][]] {
+        let result = this.navigator.locate(fullPath);
+        this._currentLevel = this.navigator.currentPathArray.length;
+        return result;
     }
 
     listDirectory(): [string, any[]][] {

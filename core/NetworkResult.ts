@@ -10,5 +10,6 @@ export class NetworkResult {
                 message: complex.errorMessage,
                 data: complex.data
             });
+        // console.log(complex.COMPLEX_TYPE, complex.data);
     }
 }

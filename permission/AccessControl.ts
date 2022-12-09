@@ -10,10 +10,10 @@ import {AuthedUser} from "../services/instance/AuthedUser";
 export class AccessControl {
     static readonly TYPE = "AC";
 
-    // todo: crypto -> hashed password => verify
-    static checkAccountAuthPrivilege(userBeacon: string, authToken: string): boolean {
+    static checkUserInstanceOwning(userBeacon: string, instanceID: string): boolean {
         try {
-            return Loader.get<[string]>(["token"], userBeacon, AuthService.keys.UserDB)[0] == authToken;
+            return Loader.get<[AuthedUser]>(["authedUser"], userBeacon,
+                AuthService.keys.UserAuthed)[0]?.userInstances.has(instanceID);
         } catch (e) {
             throw {
                 type: e.type || this.TYPE,
@@ -23,10 +23,9 @@ export class AccessControl {
         }
     }
 
-    static checkUserInstanceOwning(userBeacon: string, instanceID: string): boolean {
+    static checkUserBeaconExists(userBeacon: string): boolean {
         try {
-            return Loader.get<[AuthedUser]>(["authedUser"], userBeacon,
-                AuthService.keys.UserAuthed)[0]?.userInstances.has(instanceID);
+            return Loader.exists("*", userBeacon, AuthService.keys.UserDB);
         } catch (e) {
             throw {
                 type: e.type || this.TYPE,

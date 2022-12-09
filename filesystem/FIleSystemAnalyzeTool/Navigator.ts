@@ -25,7 +25,7 @@ export class Navigator {
         //     "navigator is in void, please init first.");
     }
 
-    public forward(where: string): [string, any[]][] {
+    public forward(where: string): [string, [string, any[]][]] {
         this.inVoid();
         try {
             this.current.locate(`${this.path.join("/")}/${where}`);
@@ -38,10 +38,10 @@ export class Navigator {
             // return new ErrorComplex(this.TYPE, e.code, e.message);
         }
         this.path.push(where);
-        return this.list();
+        return [this.currentPath(), this.list()];
     }
 
-    public backward(): [string, any[]][] {
+    public backward(): [string, [string, any[]][]] {
         this.inVoid();
         let path = this.path.splice(0, this.path.length - 1);
         try {
@@ -55,10 +55,10 @@ export class Navigator {
             // return new ErrorComplex(this.COMPLEX_TYPE, e.code, e.message);
         }
         this.path = path;
-        return this.list();
+        return [this.currentPath(), this.list()];
     }
 
-    public locate(path: string): [string, any[]][] {
+    public locate(path: string): [string, [string, any[]][]] {
         try {
             this.current.locate(path);
         } catch (e) {
@@ -71,7 +71,7 @@ export class Navigator {
         }
         this.path = path.split("/").filter(layer => layer != "" || layer.length != 0);
         this._inVoid = false;
-        return this.list();
+        return [this.currentPath(), this.list()];
     }
 
     public list(): [string, any[]][] {
@@ -113,12 +113,12 @@ export class Navigator {
         }
     }
 
-    public getCurrentPathArray(): string[] {
+    get currentPathArray(): string[] {
         return this.path;
     }
 
     public currentPath(): string {
-        return this.path.join("\\");
+        return this.path.join("/");
         // return new ResultComplex<string>("FS", this.path.join("\\"));
     }
 }
