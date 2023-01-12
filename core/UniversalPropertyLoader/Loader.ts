@@ -11,6 +11,8 @@ import {ResultComplex} from "../Complex/impl/ResultComplex";
 // then unify them into this Loader using almost the same rule to access
 
 export class Loader {
+    // general
+    public static readonly STORE_LOCATION: string = path.resolve(__dirname, "../../../stores/") + "/";
     // static
     // "path/to/place"
     public static readonly STATIC_LOCATION: string = path.resolve(__dirname, "../../../stores/configs") + "/";

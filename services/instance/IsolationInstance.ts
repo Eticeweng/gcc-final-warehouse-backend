@@ -1,23 +1,26 @@
 export class IsolationInstance {
-    private _allowList: Set<string>;
-    private _disallowList: Set<string>;
-    private _defaultLevel: string;
-    private _accessDepth: number;
+    private _allowLevels: {[path: string]: {accessDepth: number}};
+    private _excludeLevels: string[];
 
-
-    get allowList(): Set<string> {
-        return this._allowList;
+    constructor(proxyObject: {}) {
+        this._allowLevels = proxyObject["allowLevels"];
+        this._excludeLevels = proxyObject["excludeLevels"];
     }
 
-    get disallowList(): Set<string> {
-        return this._disallowList;
+
+    get allowLevels(): { [p: string]: { accessDepth: number } } {
+        return this._allowLevels;
     }
 
-    get defaultLevel(): string {
-        return this._defaultLevel;
+    set allowLevels(value: { [p: string]: { accessDepth: number } }) {
+        this._allowLevels = value;
     }
 
-    get accessDepth(): number {
-        return this._accessDepth;
+    get excludeLevels(): string[] {
+        return this._excludeLevels;
+    }
+
+    set excludeLevels(value: string[]) {
+        this._excludeLevels = value;
     }
 }

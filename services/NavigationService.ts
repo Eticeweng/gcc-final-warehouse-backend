@@ -9,11 +9,13 @@ import {DBWorker} from "../core/UniversalPropertyLoader/wokers/impl/DBWorker";
 import {AccessControl} from "../permission/AccessControl";
 import {UserInstance} from "./instance/UserInstance";
 import {AuthService} from "./AuthService";
+import {JSONVirtualTableWorker} from "../core/UniversalPropertyLoader/wokers/impl/JSONVirtualTableWorker";
 
 export class NavigationService {
     public static keys = {
         NavigationInstanceTable: Loader.buildKey(["mvt", "navser"]),
-        UserFS: Loader.buildKey(["db", "userfs"])
+        UserFS: Loader.buildKey(["db", "userfs"]),
+        IsolationTable: Loader.buildKey(["jsonmvt", "iso"])
     }
     static readonly TYPE = "FSNAV";
 
@@ -23,6 +25,8 @@ export class NavigationService {
                 navigation: Navigation
             }), this.keys.NavigationInstanceTable);
             Loader.assignWorker(new DBWorker("test", "userfs"), this.keys.UserFS);
+            Loader.assignWorker(new JSONVirtualTableWorker("isolation"), this.keys.IsolationTable);
+
         } catch (e) {
             throw {
                 type: this.TYPE,
@@ -32,7 +36,7 @@ export class NavigationService {
         }
     }
 
-    static assignNavigation(userBeacon: string, userInstanceID: string): Complex<[string, [string, any[]][]]> {
+    static assignNavigation(userBeacon: string, userInstanceID: string): Complex<[string, [string, [string, any[]][]]]> {
         try {
             if (AccessControl.checkUserInstanceOwning(userBeacon, userInstanceID)) {
                 let uuid = UUID.generate();
@@ -67,13 +71,13 @@ export class NavigationService {
         }
     }
 
-    static forward(userBeacon: string, userInstanceID: string, instanceID: string, where: string): Complex<[string, any[]][]> {
+    static forward(userBeacon: string, userInstanceID: string, instanceID: string, where: string): Complex<[string, [string, any[]][]]> {
         try {
             if (AccessControl.checkBrowsingInstancePrivilege(userBeacon, userInstanceID, instanceID)) {
                 let navigationInstance = Loader.get<[Navigation]>(["navigation"], instanceID, this.keys.NavigationInstanceTable)[0];
                 return navigationInstance == null ?
                     new ErrorComplex(this.TYPE, "FSNAV_INST_NEXTS", `request ${instanceID} instance not exists`) :
-                    new ResultComplex<[string, any[]][]>(this.TYPE, navigationInstance.forward(where));
+                    new ResultComplex<[string, [string, any[]][]]>(this.TYPE, navigationInstance.forward(where));
             }
             return new ErrorComplex(AccessControl.TYPE, "PERMI_DENY", "permission denied");
         } catch (e) {
@@ -81,13 +85,13 @@ export class NavigationService {
         }
     }
 
-    static backward(userBeacon: string, userInstanceID: string, instanceID: string): Complex<[string, any[]][]> {
+    static backward(userBeacon: string, userInstanceID: string, instanceID: string): Complex<[string, [string, any[]][]]> {
         try {
             if (AccessControl.checkBrowsingInstancePrivilege(userBeacon, userInstanceID, instanceID)) {
                 let navigationInstance = Loader.get<[Navigation]>(["navigation"], instanceID, this.keys.NavigationInstanceTable)[0];
                 return navigationInstance == null ?
                     new ErrorComplex(this.TYPE, "FSNAV_INST_NEXTS", `request ${instanceID} instance not exists`) :
-                    new ResultComplex<[string, any[]][]>(this.TYPE, navigationInstance.backward());
+                    new ResultComplex<[string, [string, any[]][]]>(this.TYPE, navigationInstance.backward());
             }
             return new ErrorComplex(AccessControl.TYPE, "PERMI_DENY", "permission denied");
         } catch (e) {
@@ -95,13 +99,13 @@ export class NavigationService {
         }
     }
 
-    static locate(userBeacon: string, userInstanceID: string, instanceID: string, fullPath: string): Complex<[string, any[]][]> {
+    static locate(userBeacon: string, userInstanceID: string, instanceID: string, fullPath: string): Complex<[string, [string, any[]][]]> {
         try {
             if (AccessControl.checkBrowsingInstancePrivilege(userBeacon, userInstanceID, instanceID)) {
                 let navigationInstance = Loader.get<[Navigation]>(["navigation"], instanceID, this.keys.NavigationInstanceTable)[0];
                 return navigationInstance == null ?
                     new ErrorComplex(this.TYPE, "FSNAV_INST_NEXTS", `request ${instanceID} instance not exists`) :
-                    new ResultComplex<[string, any[]][]>(this.TYPE, navigationInstance.locate(fullPath));
+                    new ResultComplex<[string, [string, any[]][]]>(this.TYPE, navigationInstance.locate(fullPath));
             }
             return new ErrorComplex(AccessControl.TYPE, "PERMI_DENY", "permission denied");
         } catch (e) {
