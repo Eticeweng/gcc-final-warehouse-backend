@@ -1,7 +1,5 @@
 import {IDriver} from "../IDriver";
 import fs from "fs";
-import {IData} from "../../IData";
-import {Factory} from "../../Factory";
 
 export class JSONDriver<T> implements IDriver<T> {
     deSerialize(endPoint: string): T {
